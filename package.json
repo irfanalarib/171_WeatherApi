@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/irfanalarib/171_WeatherApi/issues"
   },
-  "homepage": "https://github.com/irfanalarib/171_WeatherApi#readme"
+  "homepage": "https://github.com/irfanalarib/171_WeatherApi#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
 }
