@@ -3,47 +3,391 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geolocation</title>
+    <meta name="theme-color" content="#f3f5f1">
+    <title>Maps — Pencari Lokasi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #19251f;
+            --muted: #758079;
+            --line: #dfe5df;
+            --paper: #f3f5f1;
+            --green: #b8ee72;
+            --deep-green: #24382c;
+            --orange: #ef8459;
+            font-family: "DM Sans", sans-serif;
+            font-synthesis: none;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            min-width: 320px;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--ink);
+            background: var(--paper);
+        }
+
+        button, input { font: inherit; }
+
+        .topbar {
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            color: #f4f6f1;
+            background: var(--deep-green);
+        }
+
+        .brand, .top-meta, .eyebrow, .map-label, .coordinate-chip, .field-label {
+            display: flex;
+            align-items: center;
+        }
+
+        .brand { gap: 11px; }
+        .brand-mark {
+            width: 30px;
+            height: 30px;
+            display: grid;
+            place-items: center;
+            color: var(--deep-green);
+            background: var(--green);
+            border-radius: 50%;
+        }
+        .brand-name {
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 0;
+        }
+        .brand-name span { color: var(--green); }
+        .top-meta { gap: 8px; color: #c4cec6; font-size: 12px; }
+        .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+        .workspace {
+            min-height: calc(100vh - 68px);
+            display: grid;
+            grid-template-columns: minmax(330px, 390px) minmax(0, 1fr);
+        }
+
+        .sidebar {
+            position: relative;
+            z-index: 2;
+            padding: 43px 34px 32px;
+            background:
+                radial-gradient(ellipse at 0 0, rgba(184, 238, 114, .18), transparent 35%),
+                var(--paper);
+            border-right: 1px solid var(--line);
+            animation: rise-in .55s ease both;
+        }
+
+        .eyebrow {
+            gap: 8px;
+            margin-bottom: 22px;
+            color: #68805d;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+        }
+        .eyebrow::before { content: ""; width: 19px; height: 1px; background: #91ad73; }
+
+        h1 {
+            margin: 0;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: clamp(39px, 4vw, 52px);
+            line-height: .99;
+            letter-spacing: 0;
+        }
+        h1 span { color: #78965f; }
+        .intro { margin: 15px 0 31px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+
+        .search-label {
+            display: block;
+            margin-bottom: 9px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .search-box {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 12px;
+            background: #fff;
+            border: 1px solid #d8dfd7;
+            border-radius: 6px;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .search-box:focus-within { border-color: #799960; box-shadow: 0 0 0 3px rgba(121, 153, 96, .12); }
+        .search-box svg { flex: 0 0 auto; color: #7b867d; }
+        .search-box input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--ink); background: transparent; font-size: 13px; }
+        .search-box input::placeholder { color: #a0a8a1; }
+
+        .action-row { display: grid; grid-template-columns: 1fr 46px; gap: 8px; margin-top: 9px; }
+        .search-button, .locate-button {
+            height: 43px;
+            display: grid;
+            place-items: center;
+            border: 0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform .18s, background .18s;
+        }
+        .search-button { display: flex; justify-content: center; gap: 9px; color: #fff; background: var(--deep-green); font-size: 12px; font-weight: 700; }
+        .search-button:hover { background: #344e3b; }
+        .locate-button { color: var(--ink); background: #e4eadf; }
+        .locate-button:hover { background: #d8e4ce; }
+        .search-button:active, .locate-button:active { transform: scale(.98); }
+        button:disabled { opacity: .65; cursor: wait; }
+
+        .result-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 36px 0 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--line);
+        }
+        .result-heading h2 { margin: 0; font-family: "Space Grotesk", sans-serif; font-size: 15px; }
+        .result-index { color: #89938c; font-family: "Space Grotesk", sans-serif; font-size: 10px; }
+        .location-name { margin: 0 0 20px; overflow-wrap: anywhere; font-size: 12px; line-height: 1.5; color: #46534a; }
+
+        .details { display: grid; grid-template-columns: 1fr 1fr; }
+        .detail {
+            min-height: 75px;
+            padding: 12px 8px 10px 0;
+            border-top: 1px solid var(--line);
+        }
+        .detail:nth-child(odd) { border-right: 1px solid var(--line); }
+        .detail:nth-child(even) { padding-left: 14px; }
+        .field-label { gap: 6px; margin-bottom: 9px; color: var(--muted); font-size: 10px; }
+        .field-label svg { color: #829278; }
+        .field-value { display: block; overflow-wrap: anywhere; font-family: "Space Grotesk", sans-serif; font-size: 13px; font-weight: 600; }
+        .field-value.coordinates { font-size: 11px; font-variant-numeric: tabular-nums; }
+        .status { min-height: 18px; margin: 12px 0 0; color: #758079; font-size: 11px; }
+        .status.error { color: #b94d37; }
+        .sidebar-foot { margin-top: 27px; color: #929b93; font-size: 10px; }
+
+        .map-wrap { position: relative; min-width: 0; min-height: 600px; background: #dce6d9; }
+        #map { position: absolute; inset: 0; }
+        .map-label, .coordinate-chip {
+            position: absolute;
+            z-index: 500;
+            gap: 8px;
+            padding: 10px 13px;
+            background: rgba(255, 255, 255, .94);
+            border: 1px solid rgba(25, 37, 31, .08);
+            border-radius: 5px;
+            box-shadow: 0 4px 18px rgba(25, 37, 31, .08);
+            backdrop-filter: blur(8px);
+        }
+        .map-label { top: 20px; left: 20px; color: #344238; font-size: 11px; font-weight: 700; }
+        .map-label svg { color: #799960; }
+        .coordinate-chip { right: 20px; bottom: 24px; color: #36443a; font-family: "Space Grotesk", sans-serif; font-size: 10px; font-variant-numeric: tabular-nums; }
+        .coordinate-chip svg { color: #78965f; }
+        .leaflet-control-attribution { font-family: "DM Sans", sans-serif; font-size: 9px !important; }
+        .leaflet-control-zoom a { color: var(--deep-green) !important; }
+
+        @keyframes rise-in { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 760px) {
+            .topbar { height: 60px; padding: 0 19px; }
+            .workspace { min-height: calc(100vh - 60px); grid-template-columns: 1fr; }
+            .sidebar { padding: 30px 22px 24px; border-right: 0; }
+            h1 { font-size: 43px; }
+            .intro { max-width: 390px; margin-bottom: 24px; }
+            .result-heading { margin-top: 27px; }
+            .map-wrap { min-height: 48vh; }
+            .map-label { top: 13px; left: 13px; }
+            .coordinate-chip { right: 13px; bottom: 18px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+        }
+
+        body { background: #f7f8f6; }
+        .topbar { height: 58px; padding: 0 24px; color: var(--ink); background: #fff; border-bottom: 1px solid var(--line); }
+        .brand-mark { width: 25px; height: 25px; color: #fff; background: var(--deep-green); }
+        .brand-name { font-size: 16px; }
+        .brand-name span { color: var(--deep-green); }
+        .top-meta, .eyebrow, h1, .intro, .result-index, .sidebar-foot, .map-wrap { display: none; }
+        .workspace { min-height: 0; display: block; }
+        .sidebar { max-width: 680px; margin: 0 auto; padding: 42px 28px 60px; background: transparent; border: 0; animation: none; }
+        .search-label { font-size: 13px; }
+        .search-box { height: 46px; }
+        .action-row { grid-template-columns: 1fr 46px; }
+        .search-button { min-height: 42px; }
+        .result-heading { margin: 32px 0 12px; padding-bottom: 10px; }
+        .result-heading h2 { font-size: 16px; }
+        .location-name { margin-bottom: 18px; font-size: 13px; }
+        .details { grid-template-columns: 1fr; }
+        .detail, .detail:nth-child(even) {
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 10px 0;
+            border-right: 0;
+        }
+        .field-label { flex: 0 0 auto; margin: 0; font-size: 12px; }
+        .field-value { max-width: 65%; text-align: right; font-size: 13px; }
+        .field-value.coordinates { font-size: 12px; }
+        .status { margin-top: 15px; }
+
+        @media (max-width: 760px) {
+            .topbar { height: 54px; padding: 0 18px; }
+            .sidebar { padding: 30px 20px 44px; }
+        }
+    </style>
 </head>
-
 <body>
+    <header class="topbar">
+        <div class="brand">
+            <span class="brand-mark" aria-hidden="true">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-5.1 7-12a7 7 0 1 0-14 0c0 6.9 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/></svg>
+            </span>
+            <span class="brand-name">Maps<span>.</span></span>
+        </div>
+        <div class="top-meta"><span class="live-dot"></span> DATA LOKASI · MAPTILER</div>
+    </header>
 
-    <h3>Nama : </h3>
-    <h3>NIM : </h3>
+    <main class="workspace">
+        <section class="sidebar" aria-labelledby="page-title">
+            <div class="eyebrow">PENCARI LOKASI / 001</div>
+            <h1 id="page-title">Temukan<br><span>titiknya.</span></h1>
+            <p class="intro">Jelajahi suatu tempat, lalu lihat detail administratif dan koordinatnya di peta.</p>
 
-    <p>
-        Kota :
-        <span id="lokasi"></span>
-    </p>
+            <form id="search-form">
+                    <label class="search-label" for="location-input">Lokasi</label>
+                <div class="search-box">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
+                    <input id="location-input" name="location" type="search" placeholder="Kota, kecamatan, atau alamat" autocomplete="off" required>
+                </div>
+                <div class="action-row">
+                    <button class="search-button" id="search-button" type="submit">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                        <span>Cari lokasi</span>
+                    </button>
+                    <button class="locate-button" id="locate-button" type="button" aria-label="Gunakan lokasi saya" title="Gunakan lokasi saya">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+                    </button>
+                </div>
+            </form>
 
-    <hr>
+            <div class="result-heading">
+                <h2>Detail lokasi</h2>
+                <span class="result-index">HASIL <span id="result-count">—</span></span>
+            </div>
+            <p class="location-name" id="location-name" aria-live="polite">Cari lokasi untuk melihat detailnya.</p>
 
-    <p>
-        Koordinat :
-        <span id="negara"></span>
-    </p>
+            <div class="details" aria-live="polite">
+                <div class="detail">
+                    <span class="field-label"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>Negara</span>
+                    <strong class="field-value" id="country">—</strong>
+                </div>
+                <div class="detail">
+                    <span class="field-label"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m3 10 9-7 9 7v10H3zM9 20v-6h6v6"/></svg>Provinsi</span>
+                    <strong class="field-value" id="province">—</strong>
+                </div>
+                <div class="detail">
+                    <span class="field-label"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v14H4zM8 9h.01M12 9h.01M16 9h.01M8 13h.01M12 13h.01M16 13h.01"/></svg>Kecamatan</span>
+                    <strong class="field-value" id="district">—</strong>
+                </div>
+                <div class="detail">
+                    <span class="field-label"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v18m0-18-4 4m4-4 4 4"/></svg>Longitude</span>
+                    <strong class="field-value coordinates" id="longitude">—</strong>
+                </div>
+                <div class="detail">
+                    <span class="field-label"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21V3m0 18-4-4m4 4 4-4"/></svg>Latitude</span>
+                    <strong class="field-value coordinates" id="latitude">—</strong>
+                </div>
+            </div>
+            <p class="status" id="status" role="status"></p>
+            <div class="sidebar-foot">Peta dan geocoding oleh MapTiler</div>
+        </section>
+
+    </main>
 
     <script>
+        const form = document.getElementById("search-form");
+        const input = document.getElementById("location-input");
+        const searchButton = document.getElementById("search-button");
+        const status = document.getElementById("status");
+        const apiBase = window.location.port === "3000" ? "" : "http://localhost:3000";
 
-        fetch("/api/lokasi")
-            .then(response => response.json())
-            .then(data => {
+        function setText(id, value) {
+            document.getElementById(id).textContent = value ?? "Tidak tersedia";
+        }
 
-                console.log(data);
+        function showLocation(data) {
+            setText("location-name", data.lokasi);
+            setText("country", data.negara);
+            setText("province", data.provinsi);
+            setText("district", data.kecamatan);
+            setText("longitude", Number(data.longitude).toFixed(6));
+            setText("latitude", Number(data.latitude).toFixed(6));
+            setText("result-count", "01");
+        }
 
-                document.getElementById("lokasi").innerHTML = data.kota;
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[character]);
+        }
 
-                document.getElementById("negara").innerHTML =
-                    data.koordinat;
+        async function findLocation(query) {
+            status.classList.remove("error");
+            status.textContent = "Mencari lokasi…";
+            searchButton.disabled = true;
+            try {
+                const response = await fetch(`${apiBase}/api/lokasi?${new URLSearchParams(query)}`);
+                const contentType = response.headers.get("content-type") || "";
+                if (!contentType.includes("application/json")) {
+                    throw new Error("Respons bukan JSON. Jalankan server dengan npm start.");
+                }
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || "Pencarian lokasi gagal.");
+                showLocation(data);
+                status.textContent = "Lokasi ditemukan.";
+            } catch (error) {
+                status.classList.add("error");
+                status.textContent = error instanceof TypeError
+                    ? "Server API tidak terhubung. Jalankan server dengan npm start."
+                    : error.message || "Terjadi kesalahan saat mencari lokasi.";
+            } finally {
+                searchButton.disabled = false;
+            }
+        }
 
-            })
-            .catch(error => {
+        form.addEventListener("submit", event => {
+            event.preventDefault();
+            const location = input.value.trim();
+            if (location) findLocation({ q: location });
+        });
 
-                console.error(error);
-
-            });
+        document.getElementById("locate-button").addEventListener("click", () => {
+            if (!navigator.geolocation) {
+                status.classList.add("error");
+                status.textContent = "Browser ini tidak mendukung lokasi perangkat.";
+                return;
+            }
+            status.classList.remove("error");
+            status.textContent = "Meminta izin lokasi perangkat…";
+            navigator.geolocation.getCurrentPosition(
+                position => findLocation({ longitude: position.coords.longitude, latitude: position.coords.latitude }),
+                () => {
+                    status.classList.add("error");
+                    status.textContent = "Lokasi tidak tersedia. Periksa izin lokasi browser.";
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        });
 
     </script>
-
 </body>
 </html>
